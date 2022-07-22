@@ -1,10 +1,11 @@
-#include <algorithm>
 #include <iostream>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <map>
+#include <algorithm>
+
+const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 using namespace std::literals;
 
@@ -19,10 +20,6 @@ int ReadLineWithNumber() {
     std::cin >> result;
     ReadLine();
     return result;
-}
-
-std::set<std::string> VectorToSet(const std::vector<std::string>& vs) {
-    return { vs.begin(), vs.end() };
 }
 
 std::vector<std::string> SplitIntoWords(const std::string& text) {
@@ -64,51 +61,72 @@ std::vector<std::string> SplitIntoWordsNoStop(const std::string& text, const std
     return words;
 }
 
-void AddDocument(
-    std::vector<std::pair<int, std::vector<std::string>>>& documents, 
+void AddDocument(std::vector<std::pair<int, std::vector<std::string>>>& documents, 
     const std::set<std::string>& stop_words,
-    int document_id,
-    const std::string& document) {
-    
+    int document_id, const std::string& document) {
+
     const std::vector<std::string> words = SplitIntoWordsNoStop(document, stop_words);
-    documents.push_back({ document_id, words });
+    documents.push_back(std::pair<int, std::vector<std::string>>{document_id, words});
 }
 
 std::set<std::string> ParseQuery(const std::string& text, const std::set<std::string>& stop_words) {
-    std::set<std::string> query_words = VectorToSet(SplitIntoWordsNoStop(text, stop_words));
+    std::set<std::string> query_words;
+    for (const std::string& word : SplitIntoWordsNoStop(text, stop_words)) {
+        query_words.insert(word);
+    }
     return query_words;
 }
 
-int MatchDocument(const std::pair<int, std::vector<std::string>>& content, 
+int MatchDocument(
+    const std::pair<int, std::vector<std::string>>& content, 
     const std::set<std::string>& query_words) {
 
-    int relevance = 0;
-
-    const auto& [id, doc] = content;
-
-    for (const std::string& word : VectorToSet(doc)) {
-        std::set<std::string>::const_iterator w = query_words.find(word);
-        if (w != query_words.end()) relevance++;
+    if (query_words.empty()) {
+        return 0;
     }
-
-    return relevance;
+    std::set<std::string> matched_words;
+    for (const std::string& word : content.second) {
+        if (matched_words.count(word) != 0) {
+            continue;
+        }
+        if (query_words.count(word) != 0) {
+            matched_words.insert(word);
+        }
+    }
+    return static_cast<int>(matched_words.size());
 }
 
-std::vector<std::pair<int, int>> FindDocuments(
-    const std::vector<std::pair<int, std::vector<std::string>>>& documents, 
-    const std::set<std::string>& stop_words,
-    const std::string& query) {
-
-    const std::set<std::string> query_words = ParseQuery(query, stop_words);
+std::vector<std::pair<int, int>> FindAllDocuments(
+    const std::vector<std::pair<int, std::vector<std::string>>>& documents,
+    const std::set<std::string>& query_words)
+{
+    
     std::vector<std::pair<int, int>> matched_documents;
-
-    for (const auto& [id, document] : documents) {
-        int relevance = MatchDocument({ id, document }, query_words);
+    for (const auto& document : documents) {
+        const int relevance = MatchDocument(document, query_words);
         if (relevance > 0) {
-            matched_documents.push_back({ id, relevance });
+            matched_documents.push_back({ relevance, document.first });
         }
-    }    
+    }
+    return matched_documents;
+}
 
+std::vector<std::pair<int, int>> FindTopDocuments(
+    const std::vector<std::pair<int, std::vector<std::string>>>& documents,
+    const std::set<std::string>& stop_words, 
+    const std::string& raw_query) {
+    const std::set<std::string> query_words = ParseQuery(raw_query, stop_words);
+
+    auto matched_documents = FindAllDocuments(documents, query_words);
+    std::sort(matched_documents.rbegin(), matched_documents.rend());
+
+    if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
+        matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
+    }
+
+    for (auto& [id, relevance] : matched_documents) {
+        std::swap(id, relevance);
+    }
     return matched_documents;
 }
 
@@ -124,7 +142,8 @@ int main() {
     }
 
     const std::string query = ReadLine();
-    for (const auto& [id, relevance] : FindDocuments(documents, stop_words, query)) {
-        std::cout << "{ document_id = "s << id << ", relevance = "s<<relevance<<" }"s << std::endl;
+    for (auto [document_id, relevance] : FindTopDocuments(documents, stop_words, query)) {
+        std::cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
+            << std::endl;
     }
 }
