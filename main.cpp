@@ -14,6 +14,14 @@ struct DocumentContent {
     std::vector<std::string> words;
 };
 
+struct Document {
+    int id, relevance;
+};
+
+bool HasDocumentGreaterRelevance(const Document& lhs, const Document& rhs) {
+    return lhs.relevance > rhs.relevance;
+}
+
 std::string ReadLine() {
     std::string s;
     std::getline(std::cin, s);
@@ -101,37 +109,34 @@ int MatchDocument(
     return static_cast<int>(matched_words.size());
 }
 
-std::vector<std::pair<int, int>> FindAllDocuments(
+std::vector<Document> FindAllDocuments(
     const std::vector<DocumentContent>& documents,
     const std::set<std::string>& query_words)
 {
     
-    std::vector<std::pair<int, int>> matched_documents;
+    std::vector<Document> matched_documents;
     for (const auto& document : documents) {
         const int relevance = MatchDocument(document, query_words);
         if (relevance > 0) {
-            matched_documents.push_back({ relevance, document.id });
+            matched_documents.push_back({ document.id, relevance });
         }
     }
     return matched_documents;
 }
 
-std::vector<std::pair<int, int>> FindTopDocuments(
+std::vector<Document> FindTopDocuments(
     const std::vector<DocumentContent>& documents,
     const std::set<std::string>& stop_words, 
     const std::string& raw_query) {
     const std::set<std::string> query_words = ParseQuery(raw_query, stop_words);
 
     auto matched_documents = FindAllDocuments(documents, query_words);
-    std::sort(matched_documents.rbegin(), matched_documents.rend());
+    std::sort(matched_documents.begin(), matched_documents.end(), HasDocumentGreaterRelevance);
 
     if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
         matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
     }
 
-    for (auto& [id, relevance] : matched_documents) {
-        std::swap(id, relevance);
-    }
     return matched_documents;
 }
 

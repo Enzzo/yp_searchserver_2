@@ -1,3 +1,6 @@
+version 0.3
+Implemented the Document structure to replace pair<int, int> and taught the search engine to rank the result in descending relevance
+
 version 0.2
 declared the Document Content structure instead of using pairs, and also rewrote all functions that used pairs
 
