@@ -1,0 +1,3 @@
+limited the result of the output documents using the MAX_RESULT_DOCUMENT_COUNT constant.
+Replaced the Find Documents function with FindAll Documents.
+Added the Find Top Documents function, which returns the most relevant documents
