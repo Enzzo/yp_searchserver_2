@@ -1,3 +1,6 @@
+version 0.4
+Moved the search engine logic to the search server class and added a function CreateSearchServer that creates an instance of searchserver
+
 version 0.3
 Implemented the Document structure to replace pair<int, int> and taught the search engine to rank the result in descending relevance
 
