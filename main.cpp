@@ -9,7 +9,6 @@ const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 using namespace std;
 
-
 struct Document {
     int id, relevance;
 };
@@ -63,15 +62,15 @@ class SearchServer {
 
 private:
 
-    std::set<std::string> ParseQuery(const std::string& text/*, const std::set<std::string>& stop_words*/) {
+    std::set<std::string> ParseQuery(const std::string& text) const {
         std::set<std::string> query_words;
-        for (const std::string& word : SplitIntoWordsNoStop(text/*, stop_words*/)) {
+        for (const std::string& word : SplitIntoWordsNoStop(text)) {
             query_words.insert(word);
         }
         return query_words;
     }
 
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) {
+    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const {
         std::vector<std::string> words;
         for (const std::string& word : SplitIntoWords(text)) {
             if (stop_words_.count(word) == 0) {
@@ -81,10 +80,7 @@ private:
         return words;
     }    
 
-    std::vector<Document> FindAllDocuments(
-        const std::set<std::string>& query_words)
-    {
-
+    std::vector<Document> FindAllDocuments(const std::set<std::string>& query_words) const{
         std::vector<Document> matched_documents;
         for (const auto& document : documents_) {
             const int relevance = MatchDocument(document, query_words);
@@ -110,8 +106,7 @@ public:
         }
     }
 
-    std::vector<Document> FindTopDocuments(
-        const std::string& raw_query) {
+    std::vector<Document> FindTopDocuments(const std::string& raw_query) const {
         const std::set<std::string> query_words = ParseQuery(raw_query);
 
         auto matched_documents = FindAllDocuments(query_words);
@@ -124,9 +119,7 @@ public:
         return matched_documents;
     }
 
-    static int MatchDocument(
-        const DocumentContent& content,
-        const std::set<std::string>& query_words) {
+    static int MatchDocument(const DocumentContent& content, const std::set<std::string>& query_words) {
 
         if (query_words.empty()) {
             return 0;
@@ -160,13 +153,12 @@ SearchServer CreateSearchServer() {
 
 int main() {
     
-    SearchServer server = CreateSearchServer();
+    const SearchServer server = CreateSearchServer();
 
     const std::string query = ReadLine();
 
     for (auto [document_id, relevance] : server.FindTopDocuments(query)) {
         std::cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
             << std::endl;
-
     }
 }

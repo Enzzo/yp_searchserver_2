@@ -31,4 +31,26 @@
 *.out
 *.app
 
+*.sln
+*.vsidx
+*.lock
+*.suo
+*.db
+*.ipch
+*.pdb
+*.idb
+*.tlog
+*.lastbuildstate
+*.recipe
+*.ilk
+*.log
+*.vcxproj*
+*.filters
+*.user
 comment.txt
+
+Debug
+build
+VERSION
+MakeFile
+.vs
