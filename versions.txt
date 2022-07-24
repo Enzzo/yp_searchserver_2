@@ -1,3 +1,9 @@
+version 0.6
+Used lambda instead of predicate
+
+version 0.5
+Addming constancy
+
 version 0.4
 Moved the search engine logic to the search server class and added a function CreateSearchServer that creates an instance of searchserver
 

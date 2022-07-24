@@ -9,13 +9,10 @@ const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 using namespace std;
 
+
 struct Document {
     int id, relevance;
 };
-
-bool HasDocumentGreaterRelevance(const Document& lhs, const Document& rhs) {
-    return lhs.relevance > rhs.relevance;
-}
 
 std::string ReadLine() {
     std::string s;
@@ -110,7 +107,9 @@ public:
         const std::set<std::string> query_words = ParseQuery(raw_query);
 
         auto matched_documents = FindAllDocuments(query_words);
-        std::sort(matched_documents.begin(), matched_documents.end(), HasDocumentGreaterRelevance);
+        std::sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
+            return lhs.relevance > rhs.relevance;
+        });
 
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
