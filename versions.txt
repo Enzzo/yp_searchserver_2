@@ -1,3 +1,6 @@
+version 0.8
+Added search by inverted document index to the Search Server class. Thereby accelerated the search
+
 verdion 0.7
 Added the ability to process minus-words
 

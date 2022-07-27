@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
@@ -49,10 +50,6 @@ std::vector<std::string> SplitIntoWords(const std::string& text) {
 }
 
 class SearchServer {
-    struct DocumentContent {
-        int id;
-        std::vector<std::string> words;
-    };
 
     struct Query {
         std::set<std::string> plus_words;
@@ -65,14 +62,17 @@ class SearchServer {
         bool is_stop;
     };
 
-    std::vector<DocumentContent> documents_;
+    std::map<std::string, std::set<int>> word_to_documents_;
     std::set<std::string> stop_words_;
 
 private:
+
+    //-------------------------------IsStopWord-------------------------------
     bool IsStopWord(const std::string& word)const {
         return stop_words_.count(word) > 0;
     }
 
+    //-------------------------------ParseQueryWord-------------------------------
     QueryWord ParseQueryWord(std::string text)const {
         bool is_minus = false;
         if (text[0] == '-') {
@@ -81,6 +81,8 @@ private:
         }
         return { text, is_minus, IsStopWord(text) };
     }
+
+    //-------------------------------ParseQuery-------------------------------
     Query ParseQuery(const std::string& text) const {
         Query query;
 
@@ -98,76 +100,81 @@ private:
         return query;
     }
 
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const {
-        std::vector<std::string> words;
+    //-------------------------------SplitIntoWordsNoStop-------------------------------
+    std::set<std::string> SplitIntoWordsNoStop(const std::string& text) const {
+        std::set<std::string> words;
         for (const std::string& word : SplitIntoWords(text)) {
             if (stop_words_.count(word) == 0) {
-                words.push_back(word);
+                words.insert(word);
             }
         }
         return words;
-    }    
+    }
 
-    std::vector<Document> FindAllDocuments(const Query& query) const{
-        std::vector<Document> matched_documents;
-        for (const auto& document : documents_) {
-            const int relevance = MatchDocument(document, query);
-            if (relevance > 0) {
-                matched_documents.push_back({ document.id, relevance });
+    //-------------------------------FindAllDocuments-------------------------------
+    std::vector<Document> FindAllDocuments(const Query& query) const {
+        std::map<int, int> document_to_relevance;
+        
+        for (const std::string& plus_word : query.plus_words) {
+            if (word_to_documents_.count(plus_word) > 0) {
+                for (const int id : word_to_documents_.at(plus_word)) {
+                    document_to_relevance[id]++;
+                }
             }
         }
+
+        for (const std::string& minus_word : query.minus_words) {
+            if (word_to_documents_.count(minus_word) > 0) {
+                for (const int id : word_to_documents_.at(minus_word)) {
+                    if (document_to_relevance.count(id) > 0) {
+                        document_to_relevance.erase(id);
+                    }
+                }
+            }
+        }
+
+        std::vector<Document> matched_documents;
+
+        for (const auto [id, relevance] : document_to_relevance) {
+            matched_documents.push_back({ id, relevance });
+        }
+
         return matched_documents;
     }
 
 public:
+
+    //-------------------------------AddDocument-------------------------------
     void AddDocument(
         int document_id,
         const std::string& document) {
 
-        const std::vector<std::string> words = SplitIntoWordsNoStop(document);
-        documents_.push_back({ document_id, words });
+        for (const std::string& word : SplitIntoWordsNoStop(document)) {
+            word_to_documents_[word].insert(document_id);
+        }
     }
 
+    //-------------------------------SetStopWords-------------------------------
     void SetStopWords(const std::string& text) {
         for (const std::string& word : SplitIntoWords(text)) {
             stop_words_.insert(word);
         }
     }
 
+    //-------------------------------FindTopDocuments-------------------------------
     std::vector<Document> FindTopDocuments(const std::string& raw_query) const {
-        const Query query = ParseQuery(raw_query);        
+        const Query query = ParseQuery(raw_query);
 
         auto matched_documents = FindAllDocuments(query);
         std::sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
             return lhs.relevance > rhs.relevance;
-        });
+            });
 
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
 
         return matched_documents;
-    }
-
-    static int MatchDocument(const DocumentContent& content, const Query& query) {        
-
-        if (query.plus_words.empty()) {
-            return 0;
-        }
-
-        std::set<std::string> matched_words;
-        for (const std::string& word : content.words) {
-            if (query.minus_words.count(word) != 0) {
-                return 0;
-            }
-            if (matched_words.count(word) != 0) {
-                continue;
-            }
-            if (query.plus_words.count(word) != 0) {
-                matched_words.insert(word);
-            }
-        }
-        return static_cast<int>(matched_words.size());
     }
 };
 
@@ -176,8 +183,8 @@ SearchServer CreateSearchServer() {
     const std::string stop_words_joined = ReadLine();
     server.SetStopWords(stop_words_joined);
 
-    const int document_count = ReadLineWithNumber();    
-    
+    const int document_count = ReadLineWithNumber();
+
     for (int document_id = 0; document_id < document_count; ++document_id) {
         server.AddDocument(document_id, ReadLine());
     }
@@ -186,7 +193,7 @@ SearchServer CreateSearchServer() {
 }
 
 int main() {
-    
+
     const SearchServer server = CreateSearchServer();
 
     const std::string query = ReadLine();
