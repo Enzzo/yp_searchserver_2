@@ -1,3 +1,6 @@
+verdion 0.7
+Added the ability to process minus-words
+
 version 0.6
 Used lambda instead of predicate
 

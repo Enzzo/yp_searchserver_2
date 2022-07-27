@@ -48,6 +48,16 @@ std::vector<std::string> SplitIntoWords(const std::string& text) {
     return words;
 }
 
+std::set<std::string> ParseMinusWords(const std::set<std::string>& query) {
+    std::set<std::string> minus_words;
+    for (const std::string& word : query) {
+        if (word[0] == '-') {
+            minus_words.insert(word.substr(1));
+        }
+    }
+    return minus_words;
+}
+
 class SearchServer {
     struct DocumentContent {
         int id;
@@ -118,11 +128,17 @@ public:
         return matched_documents;
     }
 
-    static int MatchDocument(const DocumentContent& content, const std::set<std::string>& query_words) {
+    static int MatchDocument(const DocumentContent& content, const std::set<std::string>& query_words) {        
 
         if (query_words.empty()) {
             return 0;
         }
+
+        std::set<std::string> minus_words = ParseMinusWords(query_words);
+        for (const std::string& m_word : minus_words) {
+            if (std::count(content.words.begin(), content.words.end(), m_word) > 0) return 0;
+        }
+
         std::set<std::string> matched_words;
         for (const std::string& word : content.words) {
             if (matched_words.count(word) != 0) {
