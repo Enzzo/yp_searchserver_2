@@ -1,7 +1,10 @@
+version 0.9
+Improved the accuracy of document ranking by applying TF and IDF
+
 version 0.8
 Added search by inverted document index to the Search Server class. Thereby accelerated the search
 
-verdion 0.7
+version 0.7
 Added the ability to process minus-words
 
 version 0.6

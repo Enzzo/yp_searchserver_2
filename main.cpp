@@ -5,14 +5,15 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <cmath>
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
-using namespace std;
-
+using namespace std::literals;
 
 struct Document {
-    int id, relevance;
+    int id;
+    double relevance;
 };
 
 std::string ReadLine() {
@@ -62,8 +63,10 @@ class SearchServer {
         bool is_stop;
     };
 
-    std::map<std::string, std::set<int>> word_to_documents_;
+    //std::map<std::string, std::set<int>> word_to_documents_;
+    std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::set<std::string> stop_words_;
+    std::set<int> document_idx_;
 
 private:
 
@@ -101,11 +104,11 @@ private:
     }
 
     //-------------------------------SplitIntoWordsNoStop-------------------------------
-    std::set<std::string> SplitIntoWordsNoStop(const std::string& text) const {
-        std::set<std::string> words;
+    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const {
+        std::vector<std::string> words;
         for (const std::string& word : SplitIntoWords(text)) {
             if (stop_words_.count(word) == 0) {
-                words.insert(word);
+                words.push_back(word);
             }
         }
         return words;
@@ -113,24 +116,24 @@ private:
 
     //-------------------------------FindAllDocuments-------------------------------
     std::vector<Document> FindAllDocuments(const Query& query) const {
-        std::map<int, int> document_to_relevance;
-        
+        std::map<int, double> document_to_relevance;
+
         for (const std::string& plus_word : query.plus_words) {
-            if (word_to_documents_.count(plus_word) > 0) {
-                for (const int id : word_to_documents_.at(plus_word)) {
-                    document_to_relevance[id]++;
-                }
+            if (word_to_document_freqs_.count(plus_word) == 0) {
+                continue;
+            }
+            for (const auto& [document_id, tf] : word_to_document_freqs_.at(plus_word)) {
+                document_to_relevance[document_id] += tf * std::log(document_idx_.size() / static_cast<double>(word_to_document_freqs_.at(plus_word).size()));
             }
         }
 
         for (const std::string& minus_word : query.minus_words) {
-            if (word_to_documents_.count(minus_word) > 0) {
-                for (const int id : word_to_documents_.at(minus_word)) {
-                    if (document_to_relevance.count(id) > 0) {
-                        document_to_relevance.erase(id);
-                    }
-                }
-            }
+            if (word_to_document_freqs_.count(minus_word) == 0) {
+                continue;
+            }            
+            for (const auto [id, _] : word_to_document_freqs_.at(minus_word)) {
+                    document_to_relevance.erase(id);
+            }                
         }
 
         std::vector<Document> matched_documents;
@@ -149,9 +152,13 @@ public:
         int document_id,
         const std::string& document) {
 
-        for (const std::string& word : SplitIntoWordsNoStop(document)) {
-            word_to_documents_[word].insert(document_id);
+        //const std::set<std::string> words = SplitIntoWordsNoStop(document);
+        //documents_.push_back({ document_id, words });
+        const std::vector<std::string> words = SplitIntoWordsNoStop(document);
+        for (const std::string& word : words) {
+            word_to_document_freqs_[word][document_id] += 1.0 / static_cast<double>(words.size());
         }
+        document_idx_.insert(document_id);
     }
 
     //-------------------------------SetStopWords-------------------------------
