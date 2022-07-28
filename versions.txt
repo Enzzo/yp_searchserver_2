@@ -1,3 +1,6 @@
+version 0.10.1
+A small change to the computeaveragerating method
+
 version 0.10
 Added rating to the document structure
 

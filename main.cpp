@@ -158,7 +158,7 @@ private:
         return matched_documents;
     }
 
-    int ComputeAverageRating(const std::vector<int>& ratings) {
+    static int ComputeAverageRating(const std::vector<int>& ratings) {
         int sum = 0;
         for (int r : ratings) {
             sum += r;
