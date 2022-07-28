@@ -14,6 +14,7 @@ using namespace std::literals;
 struct Document {
     int id;
     double relevance;
+    int rating;
 };
 
 std::string ReadLine() {
@@ -29,6 +30,18 @@ int ReadLineWithNumber() {
     return result;
 }
 
+std::vector<int> FillRating() {
+    std::vector<int> ratings;
+    int rc;
+    std::cin >> rc;
+    for (int i = 0; i < rc; ++i) {
+        int r;
+        std::cin >> r;
+        ratings.push_back(r);
+    }
+    ReadLine();
+    return ratings;
+}
 std::vector<std::string> SplitIntoWords(const std::string& text) {
     std::vector<std::string> words;
     std::string word;
@@ -63,10 +76,10 @@ class SearchServer {
         bool is_stop;
     };
 
-    //std::map<std::string, std::set<int>> word_to_documents_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::set<std::string> stop_words_;
     std::set<int> document_idx_;
+    std::map<int, int> rating_of_documents_;
 
 private:
 
@@ -139,10 +152,18 @@ private:
         std::vector<Document> matched_documents;
 
         for (const auto [id, relevance] : document_to_relevance) {
-            matched_documents.push_back({ id, relevance });
+            matched_documents.push_back({ id, relevance, rating_of_documents_.at(id)});
         }
 
         return matched_documents;
+    }
+
+    int ComputeAverageRating(const std::vector<int>& ratings) {
+        int sum = 0;
+        for (int r : ratings) {
+            sum += r;
+        }
+        return (ratings.size() > 0)?sum / static_cast<int>(ratings.size()):0;
     }
 
 public:
@@ -150,15 +171,15 @@ public:
     //-------------------------------AddDocument-------------------------------
     void AddDocument(
         int document_id,
-        const std::string& document) {
+        const std::string& document,
+        const std::vector<int>& ratings) {
 
-        //const std::set<std::string> words = SplitIntoWordsNoStop(document);
-        //documents_.push_back({ document_id, words });
         const std::vector<std::string> words = SplitIntoWordsNoStop(document);
         for (const std::string& word : words) {
             word_to_document_freqs_[word][document_id] += 1.0 / static_cast<double>(words.size());
         }
         document_idx_.insert(document_id);
+        rating_of_documents_[document_id] = ComputeAverageRating(ratings);
     }
 
     //-------------------------------SetStopWords-------------------------------
@@ -193,7 +214,11 @@ SearchServer CreateSearchServer() {
     const int document_count = ReadLineWithNumber();
 
     for (int document_id = 0; document_id < document_count; ++document_id) {
-        server.AddDocument(document_id, ReadLine());
+        
+        const std::string query = ReadLine();
+        const std::vector<int> rating = FillRating();
+        
+        server.AddDocument(document_id, query, rating);
     }
 
     return server;
@@ -205,8 +230,8 @@ int main() {
 
     const std::string query = ReadLine();
 
-    for (auto [document_id, relevance] : server.FindTopDocuments(query)) {
-        std::cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
+    for (auto [document_id, relevance, rating] : server.FindTopDocuments(query)) {
+        std::cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << ", rating = "s<<rating<<" }"s
             << std::endl;
     }
 }

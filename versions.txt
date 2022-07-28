@@ -1,3 +1,6 @@
+version 0.10
+Added rating to the document structure
+
 version 0.9
 Improved the accuracy of document ranking by applying TF and IDF
 
