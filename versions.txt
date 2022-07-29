@@ -1,3 +1,6 @@
+version 0.11.1
+Set the status parameter in the search query equal to ACTUAL by default
+
 version 0.11
 Used enumerated types to indicate the status of documents
 

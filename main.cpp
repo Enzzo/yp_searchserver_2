@@ -210,7 +210,7 @@ public:
     }
 
     //-------------------------------FindTopDocuments-------------------------------
-    std::vector<Document> FindTopDocuments(const std::string& raw_query, const DocumentStatus& status) const {
+    std::vector<Document> FindTopDocuments(const std::string& raw_query, const DocumentStatus& status = DocumentStatus::ACTUAL) const {
         const Query query = ParseQuery(raw_query);
 
         std::vector<Document> matched_documents = FindAllDocuments(query, status);
@@ -254,12 +254,12 @@ int main() {
     search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, { 9 });
 
     std::cout << "ACTUAL:"s << std::endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::ACTUAL)) {
+    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s)) {
         PrintDocument(document);
     }
 
     std::cout << "BANNED:"s << std::endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
+    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s)) {
         PrintDocument(document);
     }
 
